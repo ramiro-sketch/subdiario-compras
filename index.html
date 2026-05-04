@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Subdiario de Compras — Brielva</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0f0f;
+    --surface: #171717;
+    --surface2: #1f1f1f;
+    --border: #2a2a2a;
+    --border2: #333;
+    --text: #e8e8e8;
+    --text2: #888;
+    --text3: #555;
+    --accent: #c8f060;
+    --accent2: #a8d040;
+    --red: #ff5555;
+    --blue: #60a8f0;
+    --radius: 6px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 14px;
+    min-height: 100vh;
+  }
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 16px 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky; top: 0;
+    background: var(--bg);
+    z-index: 100;
+  }
+  .logo {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 0.05em;
+    color: var(--accent);
+  }
+  .logo span { color: var(--text2); }
+  .header-right { display: flex; gap: 12px; align-items: center; }
+  .btn {
+    padding: 7px 14px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-family: 'IBM Plex Sans', sans-serif;
+    cursor: pointer;
+    border: 1px solid var(--border2);
+    background: var(--surface2);
+    color: var(--text);
+    transition: all 0.15s;
+  }
+  .btn:hover { border-color: var(--text3); background: #252525; }
+  .btn-primary {
+    background: var(--accent);
+    color: #0f0f0f;
+    border-color: var(--accent);
+    font-weight: 600;
+  }
+  .btn-primary:hover { background: var(--accent2); border-color: var(--accent2); }
+
+  main { padding: 32px; max-width: 1600px; margin: 0 auto; }
+
+  /* Upload area */
+  .upload-section {
+    border: 1px dashed var(--border2);
+    border-radius: 10px;
+    padding: 32px;
+    margin-bottom: 32px;
+    background: var(--surface);
+    transition: border-color 0.2s;
+  }
+  .upload-section.dragover { border-color: var(--accent); background: #1a1f12; }
+  .upload-top { display: flex; gap: 16px; align-items: flex-start; }
+  .upload-icon {
+    width: 44px; height: 44px;
+    background: var(--surface2);
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0;
+  }
+  .upload-info h2 { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+  .upload-info p { font-size: 13px; color: var(--text2); }
+  .upload-controls { display: flex; gap: 10px; margin-top: 16px; align-items: center; flex-wrap: wrap; }
+  #file-input { display: none; }
+  .rubro-select {
+    padding: 7px 10px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border2);
+    background: var(--surface2);
+    color: var(--text);
+    font-size: 13px;
+    font-family: 'IBM Plex Sans', sans-serif;
+  }
+  .file-badge {
+    display: none;
+    padding: 5px 10px;
+    background: #1a1f12;
+    border: 1px solid var(--accent);
+    border-radius: 99px;
+    font-size: 12px;
+    color: var(--accent);
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  /* Result preview */
+  #preview-section {
+    display: none;
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+  }
+  .preview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .preview-field { background: var(--surface2); border-radius: var(--radius); padding: 10px 12px; border: 1px solid var(--border); }
+  .preview-label { font-size: 11px; color: var(--text3); font-family: 'IBM Plex Mono', monospace; margin-bottom: 3px; }
+  .preview-value { font-size: 13px; color: var(--text); font-weight: 500; }
+  .preview-value.money { color: var(--accent); font-family: 'IBM Plex Mono', monospace; }
+  .preview-actions { display: flex; gap: 10px; }
+
+  /* Loading */
+  #loading-bar {
+    display: none;
+    margin-top: 16px;
+    padding: 12px 14px;
+    background: var(--surface2);
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--text2);
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .loading-dot { animation: blink 1s infinite; }
+  .loading-dot:nth-child(2) { animation-delay: 0.2s; }
+  .loading-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes blink { 0%,100%{opacity:0.2} 50%{opacity:1} }
+
+  /* Error */
+  #error-msg {
+    display: none;
+    margin-top: 12px;
+    padding: 10px 14px;
+    background: #1f1212;
+    border: 1px solid #3f2020;
+    border-radius: var(--radius);
+    font-size: 13px;
+    color: var(--red);
+  }
+
+  /* Table */
+  .table-section { }
+  .table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  .table-header h2 { font-size: 15px; font-weight: 600; }
+  .table-header span { font-size: 12px; color: var(--text2); font-family: 'IBM Plex Mono', monospace; }
+  .table-wrap { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+  thead tr { background: var(--surface); border-bottom: 1px solid var(--border2); }
+  th {
+    padding: 10px 12px;
+    text-align: left;
+    font-weight: 500;
+    color: var(--text2);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.03em;
+    white-space: nowrap;
+  }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background 0.1s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--surface); }
+  td { padding: 10px 12px; white-space: nowrap; }
+  td.money { font-family: 'IBM Plex Mono', monospace; color: var(--text); text-align: right; }
+  td.money.total { color: var(--accent); font-weight: 500; }
+  td.center { text-align: center; }
+  .rubro-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 99px;
+    font-size: 11px;
+    font-weight: 500;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    color: var(--text2);
+  }
+  .rubro-herrajes { background: #1a1712; border-color: #3a3020; color: #d4a840; }
+  .rubro-filo { background: #121a1f; border-color: #20303f; color: #60a8d0; }
+  .rubro-vidrio { background: #121a17; border-color: #203f30; color: #40d090; }
+  .rubro-led { background: #1a1220; border-color: #302040; color: #b060e0; }
+  .pdf-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-family: 'IBM Plex Mono', monospace;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    color: var(--text2);
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.1s;
+  }
+  .pdf-link:hover { border-color: var(--accent); color: var(--accent); }
+  .delete-btn {
+    background: none;
+    border: none;
+    color: var(--text3);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: all 0.1s;
+  }
+  .delete-btn:hover { color: var(--red); background: #1f1212; }
+  .empty-state {
+    text-align: center;
+    padding: 48px;
+    color: var(--text3);
+    font-size: 13px;
+  }
+  .empty-state div { font-size: 28px; margin-bottom: 8px; }
+
+  /* Modal for PDF viewer */
+  #pdf-modal {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  #pdf-modal.open { display: flex; }
+  .modal-content {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: 10px;
+    width: 100%; max-width: 860px;
+    height: 90vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .modal-header {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+  }
+  .modal-header span { font-size: 13px; font-family: 'IBM Plex Mono', monospace; color: var(--text2); }
+  .modal-close { background: none; border: none; color: var(--text2); font-size: 20px; cursor: pointer; padding: 0 4px; }
+  .modal-close:hover { color: var(--text); }
+  #pdf-viewer { flex: 1; width: 100%; border: none; background: #fff; }
+
+  /* Toast */
+  #toast {
+    position: fixed;
+    bottom: 24px; right: 24px;
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    font-size: 13px;
+    color: var(--text);
+    z-index: 2000;
+    transform: translateY(80px);
+    opacity: 0;
+    transition: all 0.25s;
+    pointer-events: none;
+  }
+  #toast.show { transform: translateY(0); opacity: 1; }
+  #toast.success { border-color: var(--accent); color: var(--accent); }
+  #toast.error { border-color: var(--red); color: var(--red); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">BRIELVA<span>/</span>subdiario-compras</div>
+  <div class="header-right">
+    <button class="btn" onclick="exportCSV()">↓ Exportar CSV</button>
+  </div>
+</header>
+
+<main>
+  <!-- Upload -->
+  <div class="upload-section" id="drop-zone">
+    <div class="upload-top">
+      <div class="upload-icon">📄</div>
+      <div class="upload-info">
+        <h2>Subir factura</h2>
+        <p>PDF o imagen — la IA extrae los datos automáticamente</p>
+      </div>
+    </div>
+    <div class="upload-controls">
+      <input type="file" id="file-input" accept=".pdf,.jpg,.jpeg,.png">
+      <button class="btn" onclick="document.getElementById('file-input').click()">Seleccionar archivo</button>
+      <select class="rubro-select" id="rubro-select">
+        <option value="">Rubro (opcional)</option>
+        <option>Herrajes</option>
+        <option>Filo</option>
+        <option>Vidrio</option>
+        <option>Led</option>
+        <option>Utilidades</option>
+        <option>Otro</option>
+      </select>
+      <span class="file-badge" id="file-badge"></span>
+    </div>
+    <div id="loading-bar">
+      Analizando factura<span class="loading-dot">.</span><span class="loading-dot">.</span><span class="loading-dot">.</span>
+    </div>
+    <div id="error-msg"></div>
+    <div id="preview-section">
+      <div class="preview-grid" id="preview-grid"></div>
+      <div class="preview-actions">
+        <button class="btn-primary btn" onclick="saveFactura()">✓ Guardar en subdiario</button>
+        <button class="btn" onclick="resetUpload()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="table-section">
+    <div class="table-header">
+      <h2>Registros</h2>
+      <span id="count-label">cargando...</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>FECHA</th>
+            <th>TIPO</th>
+            <th>PTO VTA</th>
+            <th>N° COMP</th>
+            <th>CUIT</th>
+            <th>PROVEEDOR</th>
+            <th>GRAVADO</th>
+            <th>NO GRAV.</th>
+            <th>IVA 21%</th>
+            <th>IVA 10.5%</th>
+            <th>IVA 27%</th>
+            <th>PERC IVA</th>
+            <th>IIBB BS AS</th>
+            <th>IIBB CABA</th>
+            <th>TOTAL</th>
+            <th>RUBRO</th>
+            <th>PDF</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="table-body">
+          <tr><td colspan="18" class="empty-state"><div>📋</div>No hay registros todavía</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<!-- PDF Modal -->
+<div id="pdf-modal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <span id="modal-title">Factura</span>
+      <button class="modal-close" onclick="closePdfModal()">✕</button>
+    </div>
+    <iframe id="pdf-viewer"></iframe>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://ytyhuvgfelssxpfqszod.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl0eWh1dmdmZWxzc3hwZnFzem9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MDc1MDcsImV4cCI6MjA5MzQ4MzUwN30.Uvo-iFO6tNoXnqgceEQy8QzrxxWPQ5kT_iPU2-NLzAw';
+const ANTHROPIC_KEY = '__ANTHROPIC_KEY__'; // se reemplaza al deployar
+
+let currentFile = null;
+let currentData = null;
+let currentBase64 = null;
+
+// Drag and drop
+const dropZone = document.getElementById('drop-zone');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  const f = e.dataTransfer.files[0];
+  if (f) handleFile(f);
+});
+document.getElementById('file-input').addEventListener('change', e => {
+  if (e.target.files[0]) handleFile(e.target.files[0]);
+});
+
+async function handleFile(file) {
+  currentFile = file;
+  document.getElementById('file-badge').textContent = file.name;
+  document.getElementById('file-badge').style.display = 'inline-block';
+  document.getElementById('error-msg').style.display = 'none';
+  document.getElementById('preview-section').style.display = 'none';
+  document.getElementById('loading-bar').style.display = 'block';
+
+  currentBase64 = await fileToBase64(file);
+  await extractData();
+}
+
+async function extractData() {
+  const rubroVal = document.getElementById('rubro-select').value;
+  const isImage = currentFile.type.startsWith('image/');
+  const mediaType = isImage ? currentFile.type : 'application/pdf';
+
+  const systemPrompt = `Sos un asistente contable especializado en facturas argentinas. Respondé ÚNICAMENTE con un JSON válido sin texto adicional ni markdown. Claves requeridas:
+{"fecha":"DD/MM/YYYY","tipo":"Fact A|Fact B|Fact C","pto_venta":"string","nro_comprobante":"string","cuit":"string sin guiones","proveedor":"nombre","gravado":number|null,"no_gravado":number|null,"iva_21":number|null,"iva_105":number|null,"iva_27":number|null,"percep_iva":number|null,"percep_iibb_bsas":number|null,"percep_iibb_caba":number|null,"total":number,"rubro":"string|null"}
+Números sin formato, null si no aparece.`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_KEY, 'anthropic-version': '2023-06-01' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: [
+          { type: isImage ? 'image' : 'document', source: { type: 'base64', media_type: mediaType, data: currentBase64 } },
+          { type: 'text', text: `Extraé los datos.${rubroVal ? ' Rubro: ' + rubroVal : ''}` }
+        ]}]
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.filter(b => b.type === 'text').map(b => b.text).join('') || '';
+    const parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
+    if (rubroVal && !parsed.rubro) parsed.rubro = rubroVal;
+    currentData = parsed;
+    showPreview(parsed);
+  } catch(e) {
+    document.getElementById('loading-bar').style.display = 'none';
+    document.getElementById('error-msg').textContent = 'Error al procesar: ' + e.message;
+    document.getElementById('error-msg').style.display = 'block';
+  }
+}
+
+function showPreview(d) {
+  document.getElementById('loading-bar').style.display = 'none';
+  const fields = [
+    ['fecha', d.fecha], ['tipo', d.tipo], ['pto_venta', d.pto_venta],
+    ['nro_comprobante', d.nro_comprobante], ['cuit', d.cuit], ['proveedor', d.proveedor],
+    ['gravado', d.gravado], ['iva_21', d.iva_21], ['total', d.total], ['rubro', d.rubro]
+  ];
+  document.getElementById('preview-grid').innerHTML = fields.map(([k, v]) => `
+    <div class="preview-field">
+      <div class="preview-label">${k}</div>
+      <div class="preview-value ${k==='total'||k==='gravado'||k==='iva_21'?'money':''}">${v != null ? (typeof v === 'number' ? fmtMoney(v) : v) : '—'}</div>
+    </div>`).join('');
+  document.getElementById('preview-section').style.display = 'block';
+}
+
+async function saveFactura() {
+  if (!currentData) return;
+  showToast('Guardando...', '');
+
+  // Save PDF as base64 in storage table
+  const pdfName = currentFile.name;
+
+  // Insert factura
+  const body = {
+    fecha: parseDate(currentData.fecha),
+    tipo: currentData.tipo,
+    pto_venta: currentData.pto_venta,
+    nro_comprobante: currentData.nro_comprobante,
+    cuit: currentData.cuit,
+    proveedor: currentData.proveedor,
+    gravado: currentData.gravado,
+    no_gravado: currentData.no_gravado,
+    iva_21: currentData.iva_21,
+    iva_105: currentData.iva_105,
+    iva_27: currentData.iva_27,
+    percep_iva: currentData.percep_iva,
+    percep_iibb_bsas: currentData.percep_iibb_bsas,
+    percep_iibb_caba: currentData.percep_iibb_caba,
+    total: currentData.total,
+    rubro: currentData.rubro,
+    pdf_name: pdfName
+  };
+
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/facturas`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Prefer': 'return=representation'
+    },
+    body: JSON.stringify(body)
+  });
+
+  if (!res.ok) {
+    const err = await res.text();
+    showToast('Error al guardar: ' + err, 'error');
+    return;
+  }
+
+  const [saved] = await res.json();
+
+  // Save PDF data
+  await fetch(`${SUPABASE_URL}/rest/v1/pdf_storage`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`
+    },
+    body: JSON.stringify({ factura_id: saved.id, file_name: pdfName, file_data: currentBase64 })
+  });
+
+  showToast('✓ Guardado correctamente', 'success');
+  resetUpload();
+  loadFacturas();
+}
+
+function resetUpload() {
+  currentFile = null; currentData = null; currentBase64 = null;
+  document.getElementById('file-badge').style.display = 'none';
+  document.getElementById('preview-section').style.display = 'none';
+  document.getElementById('error-msg').style.display = 'none';
+  document.getElementById('loading-bar').style.display = 'none';
+  document.getElementById('file-input').value = '';
+  document.getElementById('rubro-select').value = '';
+}
+
+async function loadFacturas() {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/facturas?order=fecha.desc,created_at.desc`, {
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+  });
+  const rows = await res.json();
+  document.getElementById('count-label').textContent = rows.length + ' registros';
+  const tbody = document.getElementById('table-body');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="18" class="empty-state"><div>📋</div>No hay registros todavía</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map(r => `
+    <tr>
+      <td>${fmtDate(r.fecha)}</td>
+      <td class="center">${r.tipo || ''}</td>
+      <td class="center">${r.pto_venta || ''}</td>
+      <td class="center">${r.nro_comprobante || ''}</td>
+      <td class="center" style="font-family:'IBM Plex Mono',monospace;font-size:11px">${r.cuit || ''}</td>
+      <td>${r.proveedor || ''}</td>
+      <td class="money">${r.gravado != null ? fmtMoney(r.gravado) : ''}</td>
+      <td class="money">${r.no_gravado != null ? fmtMoney(r.no_gravado) : ''}</td>
+      <td class="money">${r.iva_21 != null ? fmtMoney(r.iva_21) : ''}</td>
+      <td class="money">${r.iva_105 != null ? fmtMoney(r.iva_105) : ''}</td>
+      <td class="money">${r.iva_27 != null ? fmtMoney(r.iva_27) : ''}</td>
+      <td class="money">${r.percep_iva != null ? fmtMoney(r.percep_iva) : ''}</td>
+      <td class="money">${r.percep_iibb_bsas != null ? fmtMoney(r.percep_iibb_bsas) : ''}</td>
+      <td class="money">${r.percep_iibb_caba != null ? fmtMoney(r.percep_iibb_caba) : ''}</td>
+      <td class="money total">${r.total != null ? fmtMoney(r.total) : ''}</td>
+      <td><span class="rubro-tag rubro-${(r.rubro||'').toLowerCase()}">${r.rubro || '—'}</span></td>
+      <td><a class="pdf-link" onclick="openPdf('${r.id}','${r.pdf_name||''}')">📄 ver</a></td>
+      <td><button class="delete-btn" onclick="deleteFactura('${r.id}')">✕</button></td>
+    </tr>`).join('');
+}
+
+async function openPdf(facturaId, fileName) {
+  document.getElementById('modal-title').textContent = fileName || 'Factura';
+  document.getElementById('pdf-viewer').src = '';
+  document.getElementById('pdf-modal').classList.add('open');
+
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/pdf_storage?factura_id=eq.${facturaId}&select=file_data,file_name`, {
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+  });
+  const [row] = await res.json();
+  if (!row) return;
+
+  const isPdf = (row.file_name || '').toLowerCase().endsWith('.pdf');
+  const mimeType = isPdf ? 'application/pdf' : 'image/jpeg';
+  const dataUrl = `data:${mimeType};base64,${row.file_data}`;
+
+  if (isPdf) {
+    document.getElementById('pdf-viewer').src = dataUrl;
+  } else {
+    document.getElementById('pdf-viewer').srcdoc = `<img src="${dataUrl}" style="width:100%;height:auto;">`;
+  }
+}
+
+function closePdfModal() {
+  document.getElementById('pdf-modal').classList.remove('open');
+  document.getElementById('pdf-viewer').src = '';
+}
+
+async function deleteFactura(id) {
+  if (!confirm('¿Eliminar este registro?')) return;
+  await fetch(`${SUPABASE_URL}/rest/v1/pdf_storage?factura_id=eq.${id}`, {
+    method: 'DELETE',
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+  });
+  await fetch(`${SUPABASE_URL}/rest/v1/facturas?id=eq.${id}`, {
+    method: 'DELETE',
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+  });
+  showToast('Eliminado', '');
+  loadFacturas();
+}
+
+async function exportCSV() {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/facturas?order=fecha.asc`, {
+    headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+  });
+  const rows = await res.json();
+  const headers = ['FECHA','TIPO','PTO VENTA','N° COMP','CUIT','PROVEEDOR','GRAVADO','NO GRAVADO','IVA 21%','IVA 10.5%','IVA 27%','PERCEP IVA','IIBB BS AS','IIBB CABA','TOTAL','RUBRO'];
+  const csv = [headers.join('\t'), ...rows.map(r => [
+    fmtDate(r.fecha), r.tipo, r.pto_venta, r.nro_comprobante, r.cuit, r.proveedor,
+    r.gravado||'', r.no_gravado||'', r.iva_21||'', r.iva_105||'', r.iva_27||'',
+    r.percep_iva||'', r.percep_iibb_bsas||'', r.percep_iibb_caba||'', r.total||'', r.rubro||''
+  ].join('\t'))].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'subdiario_compras.csv';
+  a.click();
+}
+
+// Utils
+function fmtMoney(v) {
+  if (v == null) return '';
+  return '$ ' + Number(v).toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function fmtDate(d) {
+  if (!d) return '';
+  const [y,m,day] = d.split('-');
+  return `${day}/${m}/${y}`;
+}
+function parseDate(s) {
+  if (!s) return null;
+  const [d,m,y] = s.split('/');
+  return `${y}-${m}-${d}`;
+}
+function fileToBase64(file) {
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result.split(',')[1]);
+    r.onerror = () => rej(new Error('Error leyendo archivo'));
+    r.readAsDataURL(file);
+  });
+}
+function showToast(msg, type) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'show ' + (type || '');
+  setTimeout(() => t.className = '', 2500);
+}
+
+// Close modal on background click
+document.getElementById('pdf-modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('pdf-modal')) closePdfModal();
+});
+
+loadFacturas();
+</script>
+</body>
+</html>
