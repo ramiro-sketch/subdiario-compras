@@ -394,7 +394,7 @@
 <script>
 const SUPABASE_URL = 'https://ytyhuvgfelssxpfqszod.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inl0eWh1dmdmZWxzc3hwZnFzem9kIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5MDc1MDcsImV4cCI6MjA5MzQ4MzUwN30.Uvo-iFO6tNoXnqgceEQy8QzrxxWPQ5kT_iPU2-NLzAw';
-const ANTHROPIC_KEY = '__ANTHROPIC_KEY__'; // se reemplaza al deployar
+ // se reemplaza al deployar
 
 let currentFile = null;
 let currentData = null;
@@ -436,22 +436,12 @@ async function extractData() {
 Números sin formato, null si no aparece.`;
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch('/api/extract', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'x-api-key': ANTHROPIC_KEY, 'anthropic-version': '2023-06-01' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1000,
-        system: systemPrompt,
-        messages: [{ role: 'user', content: [
-          { type: isImage ? 'image' : 'document', source: { type: 'base64', media_type: mediaType, data: currentBase64 } },
-          { type: 'text', text: `Extraé los datos.${rubroVal ? ' Rubro: ' + rubroVal : ''}` }
-        ]}]
-      })
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ base64: currentBase64, mediaType, rubro: rubroVal })
     });
-    const data = await res.json();
-    const text = data.content?.filter(b => b.type === 'text').map(b => b.text).join('') || '';
-    const parsed = JSON.parse(text.replace(/```json|```/g, '').trim());
+    const parsed = await res.json();
     if (rubroVal && !parsed.rubro) parsed.rubro = rubroVal;
     currentData = parsed;
     showPreview(parsed);
